@@ -311,9 +311,17 @@ write_start_script() {
   cat > "$START_SCRIPT" <<EOF
 #!/usr/bin/env bash
 cd "$APP_DIR" || exit 1
+
+LOCK_DIR="/tmp/meshcore-chat.lock"
+if ! mkdir "\$LOCK_DIR" 2>/dev/null; then
+  echo "Meshcore Chat is already running or a stale lock exists: \$LOCK_DIR"
+  exit 0
+fi
+trap 'rmdir "\$LOCK_DIR" 2>/dev/null || true' EXIT
+
 export MESHCORE_AUTO_PORT="$AUTO_PORT"
 export MESHCORE_AUTO_BAUD="$AUTO_BAUD"
-exec "$APP_DIR/.venv/bin/python" "$APP_DIR/main.py"
+"$APP_DIR/.venv/bin/python" "$APP_DIR/main.py"
 EOF
   chmod +x "$START_SCRIPT"
   chown "$APP_USER:$APP_USER" "$START_SCRIPT"
@@ -329,6 +337,32 @@ X-GNOME-Autostart-enabled=true
 EOF
   chown "$APP_USER:$APP_USER" "$DESKTOP_FILE"
   ok "GUI autostart installed"
+}
+
+cleanup_duplicate_launchers() {
+  log "Checking for duplicate launchers"
+
+  run_as_user "systemctl --user disable --now meshcore-chat.service >/dev/null 2>&1 || true"
+
+  if [ -d "$AUTOSTART_DIR" ]; then
+    while IFS= read -r file; do
+      [ "$file" = "$DESKTOP_FILE" ] && continue
+      if grep -Eiq "meshcore_chat/main.py|start_meshcore_chat.sh|meshcore-chat|Meshcore Chat" "$file"; then
+        local disabled
+        disabled="$file.disabled-by-meshcore-kiosk"
+        if [ ! -e "$disabled" ]; then
+          mv "$file" "$disabled"
+          chown "$APP_USER:$APP_USER" "$disabled"
+          ok "Disabled duplicate autostart: $file"
+        else
+          rm -f "$file"
+          ok "Removed duplicate autostart already disabled before: $file"
+        fi
+      fi
+    done < <(find "$AUTOSTART_DIR" -maxdepth 1 -type f -name "*.desktop")
+  fi
+
+  ok "Duplicate launcher check complete"
 }
 
 write_pushover_config() {
@@ -545,6 +579,7 @@ main() {
   write_patch_helper
   apply_patches
   write_start_script
+  cleanup_duplicate_launchers
   write_pushover_config
   write_pushover_tools
   write_nightly_update

@@ -13,6 +13,7 @@ The installer:
 - creates a nightly `git pull` job at `00:00`
 - reboots after the nightly update
 - optionally sends a Pushover message after the device has rebooted successfully
+- avoids duplicate kiosk starts by using one fixed autostart entry, disabling old Meshcore autostarts, and adding a runtime lock
 
 ## Quick Install
 
