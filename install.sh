@@ -532,6 +532,25 @@ EOF
   ok "Nightly timer enabled"
 }
 
+send_install_success_notification() {
+  log "Sending optional install confirmation"
+  if [ ! -f "$PUSHOVER_ENV" ]; then
+    warn "Pushover not configured; skipping install confirmation"
+    return
+  fi
+
+  local host timer_state message
+  host="$(hostname)"
+  timer_state="$(systemctl is-enabled "$TIMER_NAME.timer" 2>/dev/null || echo unknown)"
+  message="Meshcore kiosk installation completed on $host. User: $APP_USER. App: $APP_DIR. Port: $AUTO_PORT @ $AUTO_BAUD. Nightly timer: $timer_state."
+
+  if /usr/local/bin/meshcore-kiosk-send-pushover "Meshcore install OK" "$message"; then
+    ok "Install confirmation sent via Pushover"
+  else
+    warn "Pushover install confirmation failed"
+  fi
+}
+
 print_summary() {
   log "Done"
   cat <<EOF
@@ -583,6 +602,7 @@ main() {
   write_pushover_config
   write_pushover_tools
   write_nightly_update
+  send_install_success_notification
   print_summary
 }
 
