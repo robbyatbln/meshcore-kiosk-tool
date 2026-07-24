@@ -58,8 +58,7 @@ install_packages() {
     fonts-noto-ui-core \
     fonts-symbola \
     hicolor-icon-theme \
-    adwaita-icon-theme \
-    papirus-icon-theme
+    adwaita-icon-theme
   fc-cache -f >/dev/null 2>&1 || true
   ok "System packages installed"
 }
