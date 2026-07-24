@@ -45,7 +45,22 @@ install_packages() {
   log "Installing system packages"
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
-  apt-get install -y git curl python3 python3-venv python3-pip python3-serial
+  apt-get install -y \
+    git \
+    curl \
+    python3 \
+    python3-venv \
+    python3-pip \
+    python3-serial \
+    fonts-dejavu-core \
+    fonts-noto-color-emoji \
+    fonts-noto-core \
+    fonts-noto-ui-core \
+    fonts-symbola \
+    hicolor-icon-theme \
+    adwaita-icon-theme \
+    papirus-icon-theme
+  fc-cache -f >/dev/null 2>&1 || true
   ok "System packages installed"
 }
 
